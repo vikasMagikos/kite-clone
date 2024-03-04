@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-const port = 8080;
+const port = 11000;
 
 
 app.get('/api/getAccount', async (req, res) => {
