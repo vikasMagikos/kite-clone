@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: '*' }));
 app.use(bodyParser.json());
 const port = 11000;
 
