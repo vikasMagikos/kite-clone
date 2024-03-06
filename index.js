@@ -2,12 +2,34 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
 
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 const port = 11000;
+
+
+app.get("/api/login", async (req, res) => {
+	try {
+		const { username, password } = req.query;
+		let account = await fetchUserConfig();
+		let userLogin = account.find((user) => user.Username === username);
+		if (!userLogin) {
+			return res.send({ status: "failed", message: "User Not Found" });
+		}
+
+		if (userLogin.Password !== password) {
+			return res.send({ status: "failed", message: "Wrong Credintials!, Try again." });
+		}
+		const token = jwt.sign({ username }, password);
+		return res.send(JSON.stringify(token));
+	} catch (err) {
+		console.log("login endpoint failed with error", err);
+		res.send({ status: "failed", message: "Internal Server Error" });
+	}
+});
 
 
 app.get('/api/getAccount', async (req, res) => {
@@ -76,6 +98,46 @@ async function getActiveAccounts() {
         {
           type: "read",
           s_name: "REQUEST TOKEN SHEET",
+          filters: filters,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+        }
+      );
+  
+      if (response.status !== 200) {
+        console.log(`HTTP error! Status: ${response.status}`);
+      }
+  
+      const data = response.data;
+  
+      if (data.response_status === "READ_SUCCESS") {
+        return data.response_data;
+      } else {
+        console.log("No data Found for accounts data", accountsData);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
+
+
+
+  async function fetchUserConfig() {
+    try {
+      const filters = [{ filterType: "simple" }];
+      const microUrl =
+        "https://script.google.com/macros/s/AKfycbxu8C5wGzqsRzvVn2JoXdfzmg29C-PaEGnfNkr4g7pL7Cj8vAcD/exec";
+  
+      const response = await axios.post(
+        microUrl,
+        {
+          type: "read",
+          s_name: "User Config",
           filters: filters,
         },
         {
