@@ -3,6 +3,7 @@ const cors = require('cors');
 const axios = require('axios');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
+const puppeteer = require('puppeteer')
 
 
 const app = express();
@@ -77,6 +78,23 @@ app.post('/api/getKitePositions', async (req, res) => {
       res.status(400).send(JSON.stringify({success: false, error: fetchedOrders.error}))
     }else{
       res.status(200).send(JSON.stringify({success: true, data: fetchedOrders.data}))
+    }
+  }catch(err){
+    console.log(err);
+    res.status(500).send(JSON.stringify({success: false, error: err}))
+  }
+})
+
+
+app.post('/api/scarpInvesting', async (req, res) => {
+  try{
+    let {url} = req.body
+    let scrapedData = await scrapData(url)
+    console.log(scrapedData);
+    if(!scrapedData.status){
+      res.status(400).send(JSON.stringify({success: false, error: scrapedData.error}))
+    }else{
+      res.status(200).send(JSON.stringify({success: true, data: scrapedData.data}))
     }
   }catch(err){
     console.log(err);
@@ -224,6 +242,42 @@ async function getActiveAccounts() {
       return {status: false, error: error};
   }
   }
+
+
+  const tableBodyPath = 'section.instrument.js-section-content > section.js-table-wrapper.common-table-comp.scroll-view > div.common-table-wrapper > div > table';
+
+  async function scrapData(url) {
+      try {
+          const browser = await puppeteer.launch({headless: true});
+          const page = await browser.newPage();
+          await page.setDefaultNavigationTimeout(60000);
+          await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36');
+          await page.goto(url);
+          await page.waitForSelector(tableBodyPath, { timeout: 60000 });
+  
+          const tableData = await page.evaluate((tableBodyPath) => {
+              const table = document.querySelector(tableBodyPath);
+              const rows = table.querySelectorAll('tr');
+              const data = [];
+              rows.forEach(row => {
+                  const rowData = [];
+                      row.querySelectorAll('td').forEach(cell => {
+                          rowData.push(cell.innerText);
+                      });
+                  data.push(rowData);
+              });
+              return data;
+          }, tableBodyPath);
+  
+          tableData.shift();
+          tableData.unshift(["Date","Price","Open","High","Low","VOlume","Chg%"]);
+          await browser.close();
+          return {status: true, data: tableData};
+      } catch (error) {
+          console.log("Error while scraping data:", error);
+          return {status: false, error: error};
+      }
+  };
 
 
 app.listen(port, () => {
