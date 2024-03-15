@@ -90,7 +90,6 @@ app.post('/api/scarpInvesting', async (req, res) => {
   try{
     let {url} = req.body
     let scrapedData = await scrapData(url)
-    console.log(scrapedData);
     if(!scrapedData.status){
       res.status(400).send(JSON.stringify({success: false, error: scrapedData.error}))
     }else{
@@ -246,12 +245,12 @@ async function getActiveAccounts() {
 
   const tableBodyPath = 'section.instrument.js-section-content > section.js-table-wrapper.common-table-comp.scroll-view > div.common-table-wrapper > div > table';
 
-  async function scrapData(url) {
+  async function scrapData(url, retryCount = 3) {
       try {
           const browser = await puppeteer.launch({headless: true});
           const page = await browser.newPage();
-          await page.setDefaultNavigationTimeout(60000);
           await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36');
+          await page.setDefaultNavigationTimeout(60000);
           await page.goto(url);
           await page.waitForSelector(tableBodyPath, { timeout: 60000 });
   
@@ -274,10 +273,22 @@ async function getActiveAccounts() {
           await browser.close();
           return {status: true, data: tableData};
       } catch (error) {
-          console.log("Error while scraping data:", error);
+        console.log("Error while scraping data:", error);
+        if (retryCount > 0) {
+					console.log(`Retrying ${retryCount} more times...`);
+          await delayFunc();
+					await browser.close();
+					return scrapData(url, retryCount - 1);
+				} else {
           return {status: false, error: error};
+				}
       }
   };
+
+
+  function delayFunc(ms = 30000) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 
 app.listen(port, () => {
