@@ -256,8 +256,8 @@ const tableBodyPath =
 
 async function scrapData(url) {
 	const browser = await puppeteer.launch({ headless: true });
-	const page = await browser.newPage();
 	try {
+		const page = await browser.newPage();
 		await page.setUserAgent(
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36"
 		);
@@ -293,10 +293,10 @@ async function scrapData(url) {
 		return { status: true, data: tableData };
 	} catch (error) {
 		console.log("Error while scraping data:", error);
+		await browser.close();
 		return { status: false, error: error };
 	}
 }
-
 
 app.listen(port, () => {
 	console.log(`Server is running on http://localhost:${port}`);
