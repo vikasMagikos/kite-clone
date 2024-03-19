@@ -261,8 +261,8 @@ async function scrapData(url) {
 		await page.setUserAgent(
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36"
 		);
-		await page.setDefaultNavigationTimeout(60000);
 		await page.goto(url);
+		await page.setDefaultNavigationTimeout(60000);
 		await page.waitForSelector(tableBodyPath, { timeout: 60000 });
 
 		const tableData = await page.evaluate((tableBodyPath) => {
@@ -286,7 +286,7 @@ async function scrapData(url) {
 			"Open",
 			"High",
 			"Low",
-			"VOlume",
+			"Volume",
 			"Chg%",
 		]);
 		await browser.close();
