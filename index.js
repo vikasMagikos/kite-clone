@@ -99,24 +99,6 @@ app.post("/api/getKitePositions", async (req, res) => {
 	}
 });
 
-app.post("/api/scarpInvesting", async (req, res) => {
-	try {
-		let { url } = req.body;
-		let scrapedData = await scrapData(url);
-		if (!scrapedData.status) {
-			res
-				.status(400)
-				.send(JSON.stringify({ success: false, error: scrapedData.error }));
-		} else {
-			res
-				.status(200)
-				.send(JSON.stringify({ success: true, data: scrapedData.data }));
-		}
-	} catch (err) {
-		console.log(err);
-		res.status(500).send(JSON.stringify({ success: false, error: err }));
-	}
-});
 
 async function getActiveAccounts() {
 	try {
@@ -251,52 +233,6 @@ async function getPosition(api_Key, access_Token) {
 	}
 }
 
-const tableBodyPath =
-	"section.instrument.js-section-content > section.js-table-wrapper.common-table-comp.scroll-view > div.common-table-wrapper > div > table";
-
-async function scrapData(url) {
-	const browser = await puppeteer.launch({ headless: true });
-	try {
-    const page = await browser.newPage();
-    await page.setDefaultNavigationTimeout(60000);
-		await page.setUserAgent(
-			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36"
-		);
-		await page.goto(url);
-		await page.waitForSelector(tableBodyPath, { timeout: 60000 });
-
-		const tableData = await page.evaluate((tableBodyPath) => {
-			const table = document.querySelector(tableBodyPath);
-			const rows = table.querySelectorAll("tr");
-			const data = [];
-			rows.forEach((row) => {
-				const rowData = [];
-				row.querySelectorAll("td").forEach((cell) => {
-					rowData.push(cell.innerText);
-				});
-				data.push(rowData);
-			});
-			return data;
-		}, tableBodyPath);
-
-		tableData.shift();
-		tableData.unshift([
-			"Date",
-			"Price",
-			"Open",
-			"High",
-			"Low",
-			"Volume",
-			"Chg%",
-		]);
-		await browser.close();
-		return { status: true, data: tableData };
-	} catch (error) {
-		console.log("Error while scraping data:", error);
-		await browser.close();
-		return { status: false, error: error };
-	}
-}
 
 app.listen(port, () => {
 	console.log(`Server is running on http://localhost:${port}`);
