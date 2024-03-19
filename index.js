@@ -257,12 +257,12 @@ const tableBodyPath =
 async function scrapData(url) {
 	const browser = await puppeteer.launch({ headless: true });
 	try {
-		const page = await browser.newPage();
+    const page = await browser.newPage();
+    await page.setDefaultNavigationTimeout(60000);
 		await page.setUserAgent(
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36"
 		);
 		await page.goto(url);
-		await page.setDefaultNavigationTimeout(60000);
 		await page.waitForSelector(tableBodyPath, { timeout: 60000 });
 
 		const tableData = await page.evaluate((tableBodyPath) => {
